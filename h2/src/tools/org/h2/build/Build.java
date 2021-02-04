@@ -111,13 +111,13 @@ public class Build extends BuildBase {
         StringList args = args("-Xmx128m",
                 "-cp", cp, "org.h2.test.bench.TestPerformance");
         execJava(args.plus("-init", "-db", "1"));
-        execJava(args.plus("-db", "2"));
-        execJava(args.plus("-db", "3", "-out", "pe.html"));
-        execJava(args.plus("-init", "-db", "4"));
-        execJava(args.plus("-db", "5", "-exit"));
-        execJava(args.plus("-db", "6"));
-        execJava(args.plus("-db", "7"));
-        execJava(args.plus("-db", "8", "-out", "ps.html"));
+//        execJava(args.plus("-db", "2"));
+//        execJava(args.plus("-db", "3", "-out", "pe.html"));
+//        execJava(args.plus("-init", "-db", "4"));
+//        execJava(args.plus("-db", "5", "-exit"));
+//        execJava(args.plus("-db", "6"));
+//        execJava(args.plus("-db", "7"));
+//        execJava(args.plus("-db", "8", "-out", "ps.html"));
     }
 
     /**

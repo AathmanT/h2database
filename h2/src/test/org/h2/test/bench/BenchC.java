@@ -232,6 +232,7 @@ public class BenchC implements Bench {
     private void loadItem() throws SQLException {
         trace("Loading item table");
         boolean[] original = random.getBoolean(items, items / 10);
+        System.out.println("++++++++++ tettat1 ++++++=");
         PreparedStatement prep = database.prepare(
                 "INSERT INTO ITEM(I_ID, I_IM_ID, I_NAME, I_PRICE, I_DATA) " +
                 "VALUES(?, ?, ?, ?, ?)");
@@ -257,6 +258,7 @@ public class BenchC implements Bench {
 
     private void loadWarehouse() throws SQLException {
         trace("Loading warehouse table");
+        System.out.println("++++++++++ tettat2 ++++++=");
         PreparedStatement prep = database.prepare(
                 "INSERT INTO WAREHOUSE(W_ID, W_NAME, W_STREET_1, " +
                 "W_STREET_2, W_CITY, W_STATE, W_ZIP, W_TAX, W_YTD) " +
@@ -291,6 +293,7 @@ public class BenchC implements Bench {
 
     private void loadCustomer() throws SQLException {
         trace("Load customer table");
+        System.out.println("++++++++++ tettat3 ++++++=");
         int max = warehouses * districtsPerWarehouse;
         int i = 0;
         for (int id = 1; id <= warehouses; id++) {
@@ -385,6 +388,7 @@ public class BenchC implements Bench {
 
     private void loadOrder() throws SQLException {
         trace("Loading order table");
+        System.out.println("++++++++++ tettat4 ++++++=");
         int max = warehouses * districtsPerWarehouse;
         int i = 0;
         for (int wId = 1; wId <= warehouses; wId++) {
