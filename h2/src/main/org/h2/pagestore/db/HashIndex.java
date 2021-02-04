@@ -45,6 +45,7 @@ public class HashIndex extends Index {
 
     public HashIndex(PageStoreTable table, int id, String indexName, IndexColumn[] columns, IndexType indexType) {
         super(table, id, indexName, columns, indexType);
+        System.out.println("+++++++++ Going into hash index ++++++++++");
         Column column = columns[0].column;
         indexColumn = column.getColumnId();
         totalOrdering = DataType.hasTotalOrdering(column.getType().getValueType());

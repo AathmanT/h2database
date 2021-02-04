@@ -175,13 +175,16 @@ public class PageStoreTable extends RegularTable {
                             "hash indexes may index only one column");
                 }
                 if (indexType.isUnique()) {
+                    System.out.println("+++++++++ Creating hash index ++++++++++");
                     index = new HashIndex(this, indexId, indexName, cols,
                             indexType);
                 } else {
+                    System.out.println("+++++++++ Creating non unique hash index ++++++++++");
                     index = new NonUniqueHashIndex(this, indexId, indexName,
                             cols, indexType);
                 }
             } else {
+                System.out.println("+++++++++ Creating tree index ++++++++++");
                 index = new TreeIndex(this, indexId, indexName, cols, indexType);
             }
         }
