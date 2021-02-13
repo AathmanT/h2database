@@ -40,6 +40,8 @@ public class NonUniqueHashIndex extends Index {
     private final int indexColumn;
     private final boolean totalOrdering;
     private Map<Value, ArrayList<Long>> rows;
+    private KMeansModel kMeansModel;
+    private List<Double> doubleList;
     private final PageStoreTable tableData;
     private long rowCount;
 
@@ -50,6 +52,7 @@ public class NonUniqueHashIndex extends Index {
         indexColumn = column.getColumnId();
         totalOrdering = DataType.hasTotalOrdering(column.getType().getValueType());
         tableData = table;
+        doubleList = new ArrayList<Double>();
         reset();
     }
 
@@ -73,6 +76,20 @@ public class NonUniqueHashIndex extends Index {
         }
         positions.add(row.getKey());
         rowCount++;
+    }
+    public void addToKmeans(SessionLocal session, Row row, JavaRDD<Vector> rdd_dataset, long rdd_row_count){
+
+        // Cluster the data into two classes using KMeans
+        int numClusters = 2;
+        int numIterations = 20;
+        kMeansModel = KMeans.train(rdd_dataset.rdd(), numClusters, numIterations);
+
+
+        System.out.println("Cluster centers:");
+        for (Vector center: kMeansModel.clusterCenters()) {
+            System.out.println(" " + center);
+        }
+        rowCount = doubleList.size();
     }
 
     @Override
@@ -113,6 +130,46 @@ public class NonUniqueHashIndex extends Index {
         v = v.convertTo(tableData.getColumn(indexColumn).getType(), session);
         ArrayList<Long> positions = rows.get(v);
         return new NonUniqueHashCursor(session, tableData, positions);
+    }
+
+    public Cursor findByKMeans(SessionLocal session, SearchRow first, SearchRow last){
+        if (first == null || last == null) {
+            throw DbException.getInternalError(first + " " + last);
+        }
+        if (first != last) {
+            if (TreeIndex.compareKeys(first, last) != 0) {
+                throw DbException.getInternalError();
+            }
+        }
+
+        Value v = first.getValue(indexColumn);
+        /*
+         * Sometimes the incoming search is a similar, but not the same type
+         * e.g. the search value is INT, but the index column is LONG. In which
+         * case we need to convert, otherwise the HashMap will not find the
+         * result.
+         */
+        v = v.convertTo(tableData.getColumn(indexColumn).getType(), session);
+
+
+        // Get all cluster labels of all elements
+        List<Integer> all_clusters_list = getAllClusterList(kMeansModel, rdd_dataset);
+
+        // Get prediction from the model
+        int pred = kMeansModel.predict(Vectors.dense(v));
+        System.out.println("The pred: "+pred);
+        int search_key = pred;
+
+        // Get all elements beloging to a specific cluster
+        List<Double> cluster_elements = getSpecificClusterElements(search_key, all_clusters_list);
+
+
+
+
+        ArrayList<Long> positions = rows.get(v);
+        return new NonUniqueHashCursor(session, tableData, positions);
+
+
     }
 
     @Override
