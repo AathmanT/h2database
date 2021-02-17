@@ -145,7 +145,7 @@ public class NonUniqueHashIndex extends Index {
         ArrayList<Long> positions = rows.get(v);
         long t4 = System.currentTimeMillis();
 
-        System.out.println("===============================  t4-t3="+(t4-t3)+"  ================================");
+//        System.out.println("===============================  t4-t3="+(t4-t3)+"  ================================");
 
         return new NonUniqueHashCursor(session, tableData, positions);
     }
@@ -186,7 +186,7 @@ public class NonUniqueHashIndex extends Index {
         ArrayList<Long> positions = getSpecificClusterElements(search_key, all_clusters_list, all_positions);
 
         long t2 = System.currentTimeMillis();
-        System.out.println("===============================  t2-t1="+(t2-t1)+"  ================================");
+//        System.out.println("===============================  t2-t1="+(t2-t1)+"  ================================");
 
 
 //        ArrayList<Long> positions = rows.get(v);
@@ -260,11 +260,16 @@ public class NonUniqueHashIndex extends Index {
     public ArrayList<Integer> getAllClusterList(KMeansModel kmeans_model, JavaRDD<Vector> rdd_dataset){
 
         // Get cluster labels of each elements
-        JavaRDD<Integer> all_clusters_rdd = kMeansModel.predict(jsc.parallelize(rdd_dataset.collect()));
-
+        JavaRDD<Integer> all_clusters_rdd = this.kMeansModel.predict(jsc.parallelize(rdd_dataset.collect()));
+        System.out.println("11111");
         List<Integer> all_clusters_list =  all_clusters_rdd.collect();
+        System.out.println("22222");
         ArrayList<Integer> all_clusters_list1 = new ArrayList<Integer>();
+        System.out.println("33333");
+
         all_clusters_list1.addAll(all_clusters_list);
+        System.out.println("444444");
+
         // Print cluster labels of each elements
         System.out.println("Printing labels for the whole dataset");
         System.out.println(Arrays.toString(all_clusters_list.toArray()));

@@ -16,7 +16,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
-
 /**
  * Tests nested joins and right outer joins.
  */
@@ -74,37 +73,58 @@ public class TestOuterJoins extends TestDb {
                 // ignore
             }
         }
-        executeAndLog("create table t0(x int primary key)");
-        executeAndLog("create table t1(x int)");
+//        executeAndLog("create memory table t0(x int primary key)");
+        executeAndLog("create memory table t0 as " +
+                "select x % 10 as x from (select *  from system_range(1, 100))");
+        executeAndLog("create hash index idx_t0_x on t0(x)");
+
+//        executeAndLog("create memory table t1(x int)");
+        executeAndLog("create memory table t1 as " +
+                "select x % 10 as x from (select *  from system_range(1, 100))");
+        executeAndLog("create hash index idx_t1_x on t1(x)");
+
         // for H2, this will ensure it's not using a clustered index
-        executeAndLog("create table t2(x real primary key)");
-        executeAndLog("create table t3(x int)");
-        executeAndLog("create index idx_t3_x on t3(x)");
-        for (int i = 0; i < 16; i++) {
-            for (int j = 0; j < 4; j++) {
-                if ((i & (1 << j)) != 0) {
-                    executeAndLog("insert into t" + j + " values(" + i + ")");
-                }
-            }
-        }
+//        executeAndLog("create memory table t2(x real primary key)");
+        executeAndLog("create memory table t2 as " +
+                "select x % 10 as x from (select *  from system_range(1, 100))");
+        executeAndLog("create hash index idx_t2_x on t2(x)");
+
+//        executeAndLog("create memory table t3(x int)");
+        executeAndLog("create memory table t3 as " +
+                "select x % 10 as x from (select *  from system_range(1, 100))");
+        executeAndLog("create hash index idx_t3_x on t3(x)");
+//        for (int i = 0; i < 16; i++) {
+//            for (int j = 0; j < 4; j++) {
+//                if ((i & (1 << j)) != 0) {
+//                    executeAndLog("insert into t" + j % 10 + " values(" + i + ")");
+//                }
+//            }
+//        }
         Random random = new Random();
         int len = getSize(500, 5000);
-        for (int i = 0; i < len; i++) {
+        for (int i = 0; i < 1; i++) {
             StringBuilder buff = new StringBuilder();
             int t = 1 + random.nextInt(3);
-            buff.append("select ");
-            for (int j = 0; j < t; j++) {
-                if (j > 0) {
-                    buff.append(", ");
-                }
-                buff.append("t" + j + ".x ");
-            }
-            buff.append("from ");
-            appendRandomJoin(random, buff, 0, t - 1);
-            appendRandomCondition(random, buff, t);
+            buff.append("select t0.x , t1.x from (t0 inner join t1 on t0.x = t1.x )");
+//            for (int j = 0; j < t; j++) {
+//                if (j > 0) {
+//                    buff.append(", ");
+//                }
+//                buff.append("t" + j + ".x ");
+//            }
+//            buff.append("from ");
+//            appendRandomJoin(random, buff, 0, t - 1);
+//            appendRandomCondition(random, buff, t);
             String sql = buff.toString();
             try {
+                System.out.println(sql);
+                long join_t1 = System.currentTimeMillis();
                 execute(sql);
+                long join_t2 = System.currentTimeMillis();
+                System.out.println("===============================  join_t2-join_t1="+(join_t1)+"  ================================");
+                System.out.println("===============================  join_t2-join_t1="+(join_t2)+"  ================================");
+                System.out.println("===============================  join_t2-join_t1="+(join_t2-join_t1)/100+"  ================================");
+
             } catch (Throwable e) {
                 if (e instanceof SQLException) {
                     trace(sql);
@@ -192,7 +212,7 @@ public class TestOuterJoins extends TestDb {
                 buff.append(random.nextBoolean() ? " and " : " or ");
             }
             buff.append("t" + random.nextInt(max) + ".x");
-            switch (random.nextInt(8)) {
+            switch (random.nextInt(7)) {
             case 0:
                 buff.append("=");
                 appendRandomValueOrColumn(random, buff, max);

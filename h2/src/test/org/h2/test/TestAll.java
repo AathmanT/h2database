@@ -344,16 +344,16 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
             }
         }
         runTests();
-        if (!travis && !vmlens) {
-            Profiler prof = new Profiler();
-            prof.depth = 16;
-            prof.interval = 1;
-            prof.startCollecting();
-            TestPerformance.main("-init", "-db", "1", "-size", "1000");
-            prof.stopCollecting();
-            System.out.println(prof.getTop(5));
-            TestPerformance.main("-init", "-db", "1", "-size", "1000");
-        }
+//        if (!travis && !vmlens) {
+//            Profiler prof = new Profiler();
+//            prof.depth = 16;
+//            prof.interval = 1;
+//            prof.startCollecting();
+//            TestPerformance.main("-init", "-db", "1", "-size", "1000");
+//            prof.stopCollecting();
+//            System.out.println(prof.getTop(5));
+//            TestPerformance.main("-init", "-db", "1", "-size", "1000");
+//        }
     }
 
     /**
@@ -536,7 +536,7 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
 //            addTest(new TestFunctionOverload());
 //            addTest(new TestFunctions());
 //            addTest(new TestInit());
-            addTest(new TestIndex());
+//            addTest(new TestIndex());
 //            addTest(new TestIndexHints());
 //            addTest(new TestLargeBlob());
 //            addTest(new TestLinkedTable());
