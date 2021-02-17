@@ -5,23 +5,18 @@
  */
 package org.h2.test.db;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.h2.api.ErrorCode;
 import org.h2.command.query.Select;
 import org.h2.test.TestBase;
 import org.h2.test.TestDb;
 import org.h2.tools.SimpleResultSet;
 import org.h2.value.ValueInteger;
+
+import java.sql.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Index tests.
@@ -46,8 +41,11 @@ public class TestIndex extends TestDb {
     @Override
     public void test() throws SQLException {
         deleteDb("index");
-        testOrderIndex();
-        testIndexTypes();
+//        testOrderIndex();
+//        testIndexTypes();
+        System.out.println("========================================================================");
+
+
         testHashIndexOnMemoryTable();
         testErrorMessage();
         testDuplicateKeyException();
@@ -697,7 +695,9 @@ public class TestIndex extends TestDb {
     private int getValue(String sql) throws SQLException {
         ResultSet rs = stat.executeQuery(sql);
         rs.next();
-        return rs.getInt(1);
+        int xsfag = rs.getInt(1);
+        return xsfag;
+//        return rs.getInt(1);
     }
 
     private void log(String sql) throws SQLException {
