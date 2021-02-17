@@ -4,6 +4,7 @@
  * Initial Developer: H2 Group
  */
 package org.h2.pagestore.db;
+
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.mllib.clustering.KMeans;
@@ -23,6 +24,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
+import org.h2.util.Utils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 
@@ -78,14 +80,16 @@ public class NonUniqueHashIndex extends Index {
     public void add(SessionLocal session, Row row) {
         System.out.println("+++++++ Adding key to Nonunique hash index +++++++");
         Value key = row.getValue(indexColumn);
-        Double k = key.getDouble();
-        doubleList.add(k);
-//        ArrayList<Long> positions = rows.get(key);
-//        if (positions == null) {
-//            positions = Utils.newSmallArrayList();
-//            rows.put(key, positions);
-//        }
-        all_positions.add(row.getKey());
+//        Double k = key.getDouble();
+//        doubleList.add(k);
+        ArrayList<Long> positions = rows.get(key);
+        if (positions == null) {
+            positions = Utils.newSmallArrayList();
+            rows.put(key, positions);
+        }
+        positions.add(row.getKey());
+
+//        all_positions.add(row.getKey());
         rowCount++;
     }
 

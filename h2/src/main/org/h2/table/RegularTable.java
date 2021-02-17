@@ -15,7 +15,6 @@ import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.mode.DefaultNullOrdering;
-import org.h2.pagestore.db.NonUniqueHashIndex;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
@@ -50,9 +49,9 @@ public abstract class RegularTable extends TableBase {
             index.add(session, row);
         }
 
-        if (index.getClass() == NonUniqueHashIndex.class){
-            ((NonUniqueHashIndex) index).addToKmeans(session);
-        }
+//        if (index.getClass() == NonUniqueHashIndex.class){
+//            ((NonUniqueHashIndex) index).addToKmeans(session);
+//        }
 
         //kmeans cluster
         //hashmap([labek:{positios. getkey()}
