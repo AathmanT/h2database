@@ -5,238 +5,27 @@
  */
 package org.h2.test;
 
-import java.lang.management.ManagementFactory;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 import org.h2.Driver;
 import org.h2.engine.Constants;
 import org.h2.store.fs.FileUtils;
 import org.h2.store.fs.rec.FilePathRec;
-import org.h2.test.auth.TestAuthentication;
 import org.h2.test.bench.TestPerformance;
-import org.h2.test.db.TestAlter;
-import org.h2.test.db.TestAlterSchemaRename;
-import org.h2.test.db.TestAlterTableNotFound;
-import org.h2.test.db.TestAnalyzeTableTx;
-import org.h2.test.db.TestAutoRecompile;
-import org.h2.test.db.TestBackup;
-import org.h2.test.db.TestBigDb;
-import org.h2.test.db.TestBigResult;
-import org.h2.test.db.TestCases;
-import org.h2.test.db.TestCheckpoint;
-import org.h2.test.db.TestCluster;
-import org.h2.test.db.TestCompatibility;
-import org.h2.test.db.TestCompatibilityOracle;
-import org.h2.test.db.TestCompatibilitySQLServer;
-import org.h2.test.db.TestCsv;
-import org.h2.test.db.TestDateStorage;
-import org.h2.test.db.TestDeadlock;
-import org.h2.test.db.TestDuplicateKeyUpdate;
-import org.h2.test.db.TestEncryptedDb;
-import org.h2.test.db.TestExclusive;
-import org.h2.test.db.TestFullText;
-import org.h2.test.db.TestFunctionOverload;
-import org.h2.test.db.TestFunctions;
-import org.h2.test.db.TestGeneralCommonTableQueries;
-import org.h2.test.db.TestIgnoreCatalogs;
 import org.h2.test.db.TestIndex;
-import org.h2.test.db.TestIndexHints;
-import org.h2.test.db.TestLargeBlob;
-import org.h2.test.db.TestLinkedTable;
-import org.h2.test.db.TestListener;
-import org.h2.test.db.TestLob;
-import org.h2.test.db.TestMemoryUsage;
-import org.h2.test.db.TestMergeUsing;
-import org.h2.test.db.TestMultiConn;
-import org.h2.test.db.TestMultiDimension;
-import org.h2.test.db.TestMultiThread;
-import org.h2.test.db.TestMultiThreadedKernel;
-import org.h2.test.db.TestOpenClose;
-import org.h2.test.db.TestOptimizations;
-import org.h2.test.db.TestOptimizerHints;
-import org.h2.test.db.TestOutOfMemory;
-import org.h2.test.db.TestPersistentCommonTableExpressions;
-import org.h2.test.db.TestPowerOff;
-import org.h2.test.db.TestQueryCache;
-import org.h2.test.db.TestReadOnly;
-import org.h2.test.db.TestRecursiveQueries;
-import org.h2.test.db.TestRights;
-import org.h2.test.db.TestRunscript;
-import org.h2.test.db.TestSQLInjection;
-import org.h2.test.db.TestSelectCountNonNullColumn;
-import org.h2.test.db.TestSelectTableNotFound;
-import org.h2.test.db.TestSequence;
-import org.h2.test.db.TestSessionsLocks;
-import org.h2.test.db.TestSetCollation;
-import org.h2.test.db.TestSpaceReuse;
-import org.h2.test.db.TestSpatial;
-import org.h2.test.db.TestSpeed;
-import org.h2.test.db.TestSubqueryPerformanceOnLazyExecutionMode;
-import org.h2.test.db.TestSynonymForTable;
-import org.h2.test.db.TestTableEngines;
-import org.h2.test.db.TestTempTables;
-import org.h2.test.db.TestTransaction;
-import org.h2.test.db.TestTriggersConstraints;
-import org.h2.test.db.TestTwoPhaseCommit;
-import org.h2.test.db.TestView;
-import org.h2.test.db.TestViewAlterTable;
-import org.h2.test.db.TestViewDropView;
-import org.h2.test.jdbc.TestBatchUpdates;
-import org.h2.test.jdbc.TestCallableStatement;
-import org.h2.test.jdbc.TestCancel;
-import org.h2.test.jdbc.TestConcurrentConnectionUsage;
-import org.h2.test.jdbc.TestConnection;
-import org.h2.test.jdbc.TestDatabaseEventListener;
-import org.h2.test.jdbc.TestDriver;
-import org.h2.test.jdbc.TestGetGeneratedKeys;
-import org.h2.test.jdbc.TestJavaObjectSerializer;
-import org.h2.test.jdbc.TestLimitUpdates;
-import org.h2.test.jdbc.TestLobApi;
-import org.h2.test.jdbc.TestManyJdbcObjects;
-import org.h2.test.jdbc.TestMetaData;
-import org.h2.test.jdbc.TestNativeSQL;
-import org.h2.test.jdbc.TestPreparedStatement;
-import org.h2.test.jdbc.TestResultSet;
-import org.h2.test.jdbc.TestSQLXML;
-import org.h2.test.jdbc.TestStatement;
-import org.h2.test.jdbc.TestTransactionIsolation;
-import org.h2.test.jdbc.TestUpdatableResultSet;
-import org.h2.test.jdbc.TestUrlJavaObjectSerializer;
-import org.h2.test.jdbc.TestZloty;
-import org.h2.test.jdbcx.TestConnectionPool;
-import org.h2.test.jdbcx.TestDataSource;
-import org.h2.test.jdbcx.TestXA;
-import org.h2.test.jdbcx.TestXASimple;
-import org.h2.test.mvcc.TestMvcc1;
-import org.h2.test.mvcc.TestMvcc2;
-import org.h2.test.mvcc.TestMvcc3;
-import org.h2.test.mvcc.TestMvcc4;
-import org.h2.test.mvcc.TestMvccMultiThreaded;
-import org.h2.test.mvcc.TestMvccMultiThreaded2;
-import org.h2.test.poweroff.TestReorderWrites;
-import org.h2.test.recover.RecoverLobTest;
-import org.h2.test.rowlock.TestRowLocks;
-import org.h2.test.scripts.TestScript;
-import org.h2.test.server.TestAutoServer;
-import org.h2.test.server.TestInit;
-import org.h2.test.server.TestNestedLoop;
-import org.h2.test.server.TestWeb;
-import org.h2.test.store.TestCacheConcurrentLIRS;
-import org.h2.test.store.TestCacheLIRS;
-import org.h2.test.store.TestCacheLongKeyLIRS;
-import org.h2.test.store.TestDataUtils;
-import org.h2.test.store.TestDefrag;
-import org.h2.test.store.TestFreeSpace;
-import org.h2.test.store.TestKillProcessWhileWriting;
-import org.h2.test.store.TestMVRTree;
-import org.h2.test.store.TestMVStore;
-import org.h2.test.store.TestMVStoreBenchmark;
-import org.h2.test.store.TestMVStoreConcurrent;
-import org.h2.test.store.TestMVStoreStopCompact;
-import org.h2.test.store.TestMVStoreTool;
-import org.h2.test.store.TestMVTableEngine;
-import org.h2.test.store.TestObjectDataType;
-import org.h2.test.store.TestRandomMapOps;
-import org.h2.test.store.TestSpinLock;
-import org.h2.test.store.TestStreamStore;
-import org.h2.test.store.TestTransactionStore;
-import org.h2.test.synth.TestBtreeIndex;
-import org.h2.test.synth.TestConcurrentUpdate;
-import org.h2.test.synth.TestCrashAPI;
-import org.h2.test.synth.TestDiskFull;
-import org.h2.test.synth.TestFuzzOptimizations;
-import org.h2.test.synth.TestHaltApp;
-import org.h2.test.synth.TestJoin;
-import org.h2.test.synth.TestKill;
-import org.h2.test.synth.TestKillRestart;
-import org.h2.test.synth.TestKillRestartMulti;
-import org.h2.test.synth.TestLimit;
-import org.h2.test.synth.TestMultiThreaded;
-import org.h2.test.synth.TestNestedJoins;
-import org.h2.test.synth.TestOuterJoins;
-import org.h2.test.synth.TestRandomCompare;
-import org.h2.test.synth.TestRandomSQL;
-import org.h2.test.synth.TestTimer;
+import org.h2.test.synth.*;
 import org.h2.test.synth.sql.TestSynth;
 import org.h2.test.synth.thread.TestMulti;
-import org.h2.test.unit.TestAnsCompression;
-import org.h2.test.unit.TestAutoReconnect;
-import org.h2.test.unit.TestBinaryArithmeticStream;
-import org.h2.test.unit.TestBinaryOperation;
-import org.h2.test.unit.TestBitStream;
-import org.h2.test.unit.TestBnf;
-import org.h2.test.unit.TestCache;
-import org.h2.test.unit.TestCharsetCollator;
-import org.h2.test.unit.TestCollation;
-import org.h2.test.unit.TestCompress;
-import org.h2.test.unit.TestConcurrentJdbc;
-import org.h2.test.unit.TestConnectionInfo;
-import org.h2.test.unit.TestDataPage;
-import org.h2.test.unit.TestDate;
-import org.h2.test.unit.TestDateIso8601;
-import org.h2.test.unit.TestDateTimeUtils;
-import org.h2.test.unit.TestDbException;
-import org.h2.test.unit.TestExit;
-import org.h2.test.unit.TestFile;
-import org.h2.test.unit.TestFileLock;
-import org.h2.test.unit.TestFileLockProcess;
-import org.h2.test.unit.TestFileSystem;
-import org.h2.test.unit.TestFtp;
-import org.h2.test.unit.TestGeometryUtils;
-import org.h2.test.unit.TestIntArray;
-import org.h2.test.unit.TestIntIntHashMap;
-import org.h2.test.unit.TestIntPerfectHash;
-import org.h2.test.unit.TestInterval;
-import org.h2.test.unit.TestJmx;
-import org.h2.test.unit.TestJsonUtils;
-import org.h2.test.unit.TestKeywords;
-import org.h2.test.unit.TestLocale;
-import org.h2.test.unit.TestMVTempResult;
-import org.h2.test.unit.TestMathUtils;
-import org.h2.test.unit.TestMemoryUnmapper;
-import org.h2.test.unit.TestMode;
-import org.h2.test.unit.TestNetUtils;
-import org.h2.test.unit.TestObjectDeserialization;
-import org.h2.test.unit.TestOldVersion;
-import org.h2.test.unit.TestOverflow;
-import org.h2.test.unit.TestPageStore;
-import org.h2.test.unit.TestPageStoreCoverage;
-import org.h2.test.unit.TestPattern;
-import org.h2.test.unit.TestPerfectHash;
-import org.h2.test.unit.TestPgServer;
-import org.h2.test.unit.TestReader;
-import org.h2.test.unit.TestRecovery;
 import org.h2.test.unit.TestReopen;
-import org.h2.test.unit.TestSampleApps;
-import org.h2.test.unit.TestScriptReader;
-import org.h2.test.unit.TestSecurity;
-import org.h2.test.unit.TestShell;
-import org.h2.test.unit.TestSort;
-import org.h2.test.unit.TestStreams;
-import org.h2.test.unit.TestStringCache;
-import org.h2.test.unit.TestStringUtils;
-import org.h2.test.unit.TestTimeStampWithTimeZone;
-import org.h2.test.unit.TestTools;
-import org.h2.test.unit.TestTraceSystem;
-import org.h2.test.unit.TestUtils;
-import org.h2.test.unit.TestValue;
-import org.h2.test.unit.TestValueMemory;
 import org.h2.test.utils.OutputCatcher;
 import org.h2.test.utils.SelfDestructor;
 import org.h2.tools.DeleteDbFiles;
 import org.h2.tools.Server;
-import org.h2.util.AbbaLockingDetector;
-import org.h2.util.Profiler;
-import org.h2.util.StringUtils;
-import org.h2.util.Task;
-import org.h2.util.ThreadDeadlockDetector;
-import org.h2.util.Utils;
+import org.h2.util.*;
+
+import java.lang.management.ManagementFactory;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The main test application. JUnit is not used because loops are easier to
@@ -555,16 +344,16 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
             }
         }
         runTests();
-        if (!travis && !vmlens) {
-            Profiler prof = new Profiler();
-            prof.depth = 16;
-            prof.interval = 1;
-            prof.startCollecting();
-            TestPerformance.main("-init", "-db", "1", "-size", "1000");
-            prof.stopCollecting();
-            System.out.println(prof.getTop(5));
-            TestPerformance.main("-init", "-db", "1", "-size", "1000");
-        }
+//        if (!travis && !vmlens) {
+//            Profiler prof = new Profiler();
+//            prof.depth = 16;
+//            prof.interval = 1;
+//            prof.startCollecting();
+//            TestPerformance.main("-init", "-db", "1", "-size", "1000");
+//            prof.stopCollecting();
+//            System.out.println(prof.getTop(5));
+//            TestPerformance.main("-init", "-db", "1", "-size", "1000");
+//        }
     }
 
     /**
@@ -610,84 +399,84 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
 
         // memory is a good match for multi-threaded, makes things happen
         // faster, more chance of exposing race conditions
-        memory = true;
-        test();
-        if (vmlens) {
-            return;
-        }
-        testAdditional();
-
-        // test utilities
-        big = !travis;
-        testUtils();
-        big = false;
-
-        // lazy
-        lazy = true;
-        memory = true;
-        test();
-        lazy = false;
-
-        // but sometimes race conditions need bigger windows
-        memory = false;
-        test();
-        testAdditional();
+//        memory = true;
+//        test();
+//        if (vmlens) {
+//            return;
+//        }
+//        testAdditional();
+//
+//        // test utilities
+//        big = !travis;
+//        testUtils();
+//        big = false;
+//
+//        // lazy
+//        lazy = true;
+//        memory = true;
+//        test();
+//        lazy = false;
+//
+//        // but sometimes race conditions need bigger windows
+//        memory = false;
+//        test();
+//        testAdditional();
 
         // basic pagestore testing
         memory = false;
         mvStore = false;
         test();
         testAdditional();
-        mvStore = true;
-
-        networked = true;
-
-        memory = true;
-        test();
-        memory = false;
-
-        lazy = true;
-        test();
-        lazy = false;
-
-        networked = false;
-
-        diskUndo = true;
-        diskResult = true;
-        traceLevelFile = 3;
-        throttle = 1;
-        cacheType = "SOFT_LRU";
-        cipher = "AES";
-        test();
-
-        diskUndo = false;
-        diskResult = false;
-        traceLevelFile = 1;
-        throttle = 0;
-        cacheType = null;
-        cipher = null;
-
-        if (!travis) {
-            traceLevelFile = 0;
-            smallLog = true;
-            networked = true;
-            ssl = true;
-            test();
-
-            big = true;
-            smallLog = false;
-            networked = false;
-            ssl = false;
-            traceLevelFile = 0;
-            test();
-            testAdditional();
-
-            big = false;
-            cipher = "AES";
-            test();
-            cipher = null;
-            test();
-        }
+//        mvStore = true;
+//
+//        networked = true;
+//
+//        memory = true;
+//        test();
+//        memory = false;
+//
+//        lazy = true;
+//        test();
+//        lazy = false;
+//
+//        networked = false;
+//
+//        diskUndo = true;
+//        diskResult = true;
+//        traceLevelFile = 3;
+//        throttle = 1;
+//        cacheType = "SOFT_LRU";
+//        cipher = "AES";
+//        test();
+//
+//        diskUndo = false;
+//        diskResult = false;
+//        traceLevelFile = 1;
+//        throttle = 0;
+//        cacheType = null;
+//        cipher = null;
+//
+//        if (!travis) {
+//            traceLevelFile = 0;
+//            smallLog = true;
+//            networked = true;
+//            ssl = true;
+//            test();
+//
+//            big = true;
+//            smallLog = false;
+//            networked = false;
+//            ssl = false;
+//            traceLevelFile = 0;
+//            test();
+//            testAdditional();
+//
+//            big = false;
+//            cipher = "AES";
+//            test();
+//            cipher = null;
+//            test();
+//        }
 
         for (Entry<Class<? extends TestBase>, Boolean> entry : executedTests.entrySet()) {
             if (!entry.getValue()) {
@@ -841,7 +630,7 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
 //            addTest(new TestKillRestartMulti());
 //            addTest(new TestMultiThreaded());
             addTest(new TestOuterJoins());
-            addTest(new TestNestedJoins());
+//            addTest(new TestNestedJoins());
 
             runAddedTests();
 

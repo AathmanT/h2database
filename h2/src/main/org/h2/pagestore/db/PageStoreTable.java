@@ -5,8 +5,8 @@
  */
 package org.h2.pagestore.db;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.h2.api.DatabaseEventListener;
 import org.h2.api.ErrorCode;
 import org.h2.command.ddl.CreateTableData;
@@ -24,6 +24,11 @@ import org.h2.table.IndexColumn;
 import org.h2.table.RegularTable;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A table store in a PageStore.
@@ -44,10 +49,15 @@ public class PageStoreTable extends RegularTable {
     private final PageDataIndex mainIndex;
     private int changesSinceAnalyze;
     private int nextAnalyze;
+    private Logger LOGGER;
 
     public PageStoreTable(CreateTableData data) {
         super(data);
         nextAnalyze = database.getSettings().analyzeAuto;
+
+        LOGGER = Logger.getLogger(PageStoreTable.class.getName());
+        LOGGER.setLevel(Level.INFO);
+
         if (data.persistData && database.isPersistent()) {
             mainIndex = new PageDataIndex(this, data.id,
                     IndexColumn.wrap(getColumns()),
@@ -62,7 +72,6 @@ public class PageStoreTable extends RegularTable {
         indexes.add(scanIndex);
         traceLock = database.getTrace(Trace.LOCK);
     }
-
     @Override
     public void close(SessionLocal session) {
         for (Index index : indexes) {
@@ -176,15 +185,28 @@ public class PageStoreTable extends RegularTable {
                 }
                 if (indexType.isUnique()) {
                     System.out.println("+++++++++ Creating hash index ++++++++++");
+                    LOGGER.severe("+++++++++ Creating hash index ++++++++++");
+
                     index = new HashIndex(this, indexId, indexName, cols,
                             indexType);
                 } else {
                     System.out.println("+++++++++ Creating non unique hash index ++++++++++");
+                    LOGGER.severe("+++++++++ Creating non unique hash index ++++++++++");
+
+                    SparkConf conf = new SparkConf().setAppName("Main")
+                            .setMaster("local[2]")
+                            .set("spark.executor.memory", "3g")
+                            .set("spark.driver.memory", "3g");
+
+                    conf.set("spark.driver.allowMultipleContexts", "true");
+                    JavaSparkContext jsc = new JavaSparkContext(conf);
+
                     index = new NonUniqueHashIndex(this, indexId, indexName,
-                            cols, indexType);
+                            cols, indexType, jsc);
                 }
             } else {
                 System.out.println("+++++++++ Creating tree index ++++++++++");
+                LOGGER.severe("+++++++++ Creating tree index ++++++++++");
                 index = new TreeIndex(this, indexId, indexName, cols, indexType);
             }
         }

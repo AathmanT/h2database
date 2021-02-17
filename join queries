@@ -1,0 +1,4 @@
+select t0.x from t0 where t0.x is not null and t0.x<>t0.x and t0.x>=-1
+select t0.x from t0 where t0.x>=3
+select t0.x , t1.x , t2.x from (t0 inner join (t1 right outer join t2 on t1.x = t2.x ) on t0.x = t1.x ) where t0.x is not null
+select t0.x , t1.x from (t0 inner join t1 on t0.x = t1.x )

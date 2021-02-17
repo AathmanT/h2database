@@ -64,6 +64,7 @@ public class HashIndex extends Index {
 
     @Override
     public void add(SessionLocal session, Row row) {
+        System.out.println("++++++++++++++++++++++++Adding new hash key+++++++++++++++++");
         Value key = row.getValue(indexColumn);
         if (key != ValueNull.INSTANCE
                 || database.getMode().uniqueIndexNullsHandling == UniqueIndexNullsHandling.FORBID_ANY_DUPLICATES) {

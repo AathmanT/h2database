@@ -5,8 +5,6 @@
  */
 package org.h2.index;
 
-import java.util.ArrayList;
-
 import org.h2.engine.SessionLocal;
 import org.h2.expression.condition.Comparison;
 import org.h2.message.DbException;
@@ -20,6 +18,8 @@ import org.h2.table.Table;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
 import org.h2.value.ValueNull;
+
+import java.util.ArrayList;
 
 /**
  * The filter used to walk through an index. This class supports IN(..)
@@ -158,7 +158,13 @@ public class IndexCursor implements Cursor {
             if (intersects != null && index instanceof SpatialIndex) {
                 cursor = ((SpatialIndex) index).findByGeometry(session, start, end, intersects);
             } else if (index != null) {
-                cursor = index.find(session, start, end);
+//                if(index.getClass() == NonUniqueHashIndex.class){
+//                    cursor = ((NonUniqueHashIndex) index).findByKMeans(session, start, end);
+//                }else{
+                    cursor = index.find(session, start, end);
+//                }
+
+
             }
         }
     }
