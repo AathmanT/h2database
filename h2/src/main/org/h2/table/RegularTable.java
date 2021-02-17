@@ -5,11 +5,6 @@
  */
 package org.h2.table;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.h2.api.ErrorCode;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.constraint.Constraint;
@@ -20,11 +15,17 @@ import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.mode.DefaultNullOrdering;
+import org.h2.pagestore.db.NonUniqueHashIndex;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
 import org.h2.value.DataType;
 import org.h2.value.TypeInfo;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Most tables are an instance of this class. For this table, the data is stored
@@ -48,6 +49,13 @@ public abstract class RegularTable extends TableBase {
         for (Row row : list) {
             index.add(session, row);
         }
+
+        if (index.getClass() == NonUniqueHashIndex.class){
+            ((NonUniqueHashIndex) index).addToKmeans(session);
+        }
+
+        //kmeans cluster
+        //hashmap([labek:{positios. getkey()}
         list.clear();
     }
 

@@ -4,12 +4,12 @@
  * Initial Developer: H2 Group
  */
 package org.h2.pagestore.db;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
-
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.mllib.clustering.KMeans;
+import org.apache.spark.mllib.clustering.KMeansModel;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.linalg.Vectors;
 import org.h2.command.query.AllColumnsForPlan;
 import org.h2.engine.SessionLocal;
 import org.h2.index.Cursor;
@@ -23,9 +23,10 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
-import org.h2.util.Utils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
+
+import java.util.*;
 
 /**
  * A non-unique index based on an in-memory hash map.
@@ -41,18 +42,25 @@ public class NonUniqueHashIndex extends Index {
     private final boolean totalOrdering;
     private Map<Value, ArrayList<Long>> rows;
     private KMeansModel kMeansModel;
-    private List<Double> doubleList;
+    List<Double> doubleList;
+//    ArrayList<Integer> int_key_list;
+    ArrayList<Long> all_positions;
+    JavaRDD<Vector> rdd_dataset;
     private final PageStoreTable tableData;
     private long rowCount;
+    JavaSparkContext jsc;
 
     public NonUniqueHashIndex(PageStoreTable table, int id, String indexName,
-            IndexColumn[] columns, IndexType indexType) {
+            IndexColumn[] columns, IndexType indexType, JavaSparkContext jsc) {
         super(table, id, indexName, columns, indexType);
         Column column = columns[0].column;
         indexColumn = column.getColumnId();
         totalOrdering = DataType.hasTotalOrdering(column.getType().getValueType());
         tableData = table;
-        doubleList = new ArrayList<Double>();
+        doubleList = new ArrayList<>();
+        all_positions = new ArrayList<>();
+//        int_key_list = new ArrayList<>();
+        this.jsc = jsc;
         reset();
     }
 
@@ -68,28 +76,32 @@ public class NonUniqueHashIndex extends Index {
 
     @Override
     public void add(SessionLocal session, Row row) {
+        System.out.println("+++++++ Adding key to Nonunique hash index +++++++");
         Value key = row.getValue(indexColumn);
-        ArrayList<Long> positions = rows.get(key);
-        if (positions == null) {
-            positions = Utils.newSmallArrayList();
-            rows.put(key, positions);
-        }
-        positions.add(row.getKey());
+        Double k = key.getDouble();
+        doubleList.add(k);
+//        ArrayList<Long> positions = rows.get(key);
+//        if (positions == null) {
+//            positions = Utils.newSmallArrayList();
+//            rows.put(key, positions);
+//        }
+        all_positions.add(row.getKey());
         rowCount++;
     }
-    public void addToKmeans(SessionLocal session, Row row, JavaRDD<Vector> rdd_dataset, long rdd_row_count){
 
+    public void addToKmeans(SessionLocal session ){
+
+        this.rdd_dataset = convertListToRDD(doubleList);
         // Cluster the data into two classes using KMeans
         int numClusters = 2;
         int numIterations = 20;
-        kMeansModel = KMeans.train(rdd_dataset.rdd(), numClusters, numIterations);
+        this.kMeansModel = KMeans.train(rdd_dataset.rdd(), numClusters, numIterations);
 
 
         System.out.println("Cluster centers:");
         for (Vector center: kMeansModel.clusterCenters()) {
             System.out.println(" " + center);
         }
-        rowCount = doubleList.size();
     }
 
     @Override
@@ -128,7 +140,13 @@ public class NonUniqueHashIndex extends Index {
          * result.
          */
         v = v.convertTo(tableData.getColumn(indexColumn).getType(), session);
+        long t3 = System.currentTimeMillis();
+
         ArrayList<Long> positions = rows.get(v);
+        long t4 = System.currentTimeMillis();
+
+        System.out.println("===============================  t4-t3="+(t4-t3)+"  ================================");
+
         return new NonUniqueHashCursor(session, tableData, positions);
     }
 
@@ -153,20 +171,25 @@ public class NonUniqueHashIndex extends Index {
 
 
         // Get all cluster labels of all elements
-        List<Integer> all_clusters_list = getAllClusterList(kMeansModel, rdd_dataset);
+        System.out.println("Printing double_list_size: "+this.doubleList.size());
+        ArrayList<Integer> all_clusters_list = getAllClusterList(kMeansModel, convertListToRDD(this.doubleList));
 
+        long t1 = System.currentTimeMillis();
         // Get prediction from the model
-        int pred = kMeansModel.predict(Vectors.dense(v));
+        int pred = kMeansModel.predict(Vectors.dense(v.getDouble()));
+
+
         System.out.println("The pred: "+pred);
         int search_key = pred;
 
         // Get all elements beloging to a specific cluster
-        List<Double> cluster_elements = getSpecificClusterElements(search_key, all_clusters_list);
+        ArrayList<Long> positions = getSpecificClusterElements(search_key, all_clusters_list, all_positions);
+
+        long t2 = System.currentTimeMillis();
+        System.out.println("===============================  t2-t1="+(t2-t1)+"  ================================");
 
 
-
-
-        ArrayList<Long> positions = rows.get(v);
+//        ArrayList<Long> positions = rows.get(v);
         return new NonUniqueHashCursor(session, tableData, positions);
 
 
@@ -214,6 +237,73 @@ public class NonUniqueHashIndex extends Index {
     @Override
     public boolean canScan() {
         return false;
+    }
+
+    public JavaRDD<Vector> convertListToRDD(List<Double> double_list){
+
+        // Convert dataset to Vector format
+        List<Vector> vector_list = new ArrayList<Vector>();
+
+        for (int i=0;i<double_list.size();i++){
+            vector_list.add(Vectors.dense(double_list.get(i)));
+        }
+
+        // Print Vector list
+        System.out.println(Arrays.toString(vector_list.toArray()));
+
+        // Convert Vector list to Vector RDD
+        JavaRDD<Vector> rdd_dataset = jsc.parallelize(vector_list);
+
+        return rdd_dataset;
+    }
+
+    public ArrayList<Integer> getAllClusterList(KMeansModel kmeans_model, JavaRDD<Vector> rdd_dataset){
+
+        // Get cluster labels of each elements
+        JavaRDD<Integer> all_clusters_rdd = kMeansModel.predict(jsc.parallelize(rdd_dataset.collect()));
+
+        List<Integer> all_clusters_list =  all_clusters_rdd.collect();
+        ArrayList<Integer> all_clusters_list1 = new ArrayList<Integer>();
+        all_clusters_list1.addAll(all_clusters_list);
+        // Print cluster labels of each elements
+        System.out.println("Printing labels for the whole dataset");
+        System.out.println(Arrays.toString(all_clusters_list.toArray()));
+
+        return all_clusters_list1;
+    }
+
+    public ArrayList<Long> getSpecificClusterElements(int search_key, ArrayList<Integer> all_clusters_list, ArrayList<Long> all_positions){
+
+        // Collect matches
+        ArrayList<Integer> matchingIndices = new ArrayList<>();
+        for (int i = 0; i < all_clusters_list.size(); i++) {
+            int element = all_clusters_list.get(i);
+
+            if (search_key == element) {
+                matchingIndices.add(i);
+            }
+        }
+
+        // Print matching indices
+        System.out.println("Printing matching indexes");
+        System.out.println(Arrays.toString(matchingIndices.toArray()));
+
+        // Get values corresponding to indices
+//        ArrayList<Long> cluster_elements = matchingIndices.stream()
+//                .map(all_positions::get)
+//                .collect(Collectors.toList());
+
+        ArrayList<Long> cluster_elements = new ArrayList<Long>();
+        for (int index : matchingIndices){
+            cluster_elements.add(all_positions.get(index));
+        }
+
+
+        // Print cluster elements
+        System.out.println("Printing row_id of the selected cluster elements");
+        System.out.println(Arrays.toString(cluster_elements.toArray()));
+
+        return cluster_elements;
     }
 
 }
